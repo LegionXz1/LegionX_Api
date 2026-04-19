@@ -20,9 +20,11 @@ define('TWITCH_SHA256HASH', '4f35f1ac933d76b1da008c806cd5546a7534dfaff83e033a422
 $authFile = __DIR__ . '/.auth';
 $ignoreKeywords = array("http", "https", "twitch.tv");
 
-// Instantiate DotEnv
-$dotenv = new Dotenv(__DIR__ . '/../', '.env');
-$dotenv->load();
+// Instantiate DotEnv if .env file exists (for local development)
+if (file_exists(__DIR__ . '/../.env')) {
+    $dotenv = new Dotenv(__DIR__ . '/../', '.env');
+    $dotenv->load();
+}
 
 //Instantiate MonoLog as $logger
 $logger = new Logger('Monolog');
