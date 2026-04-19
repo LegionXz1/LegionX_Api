@@ -1,0 +1,42 @@
+FROM php:8.4-fpm
+
+# Install Nginx, Supervisor, and PHP extensions
+RUN apt-get update && apt-get install -y \
+    nginx \
+    supervisor \
+    zip \
+    unzip \
+    git \
+    libmemcached-dev \
+    zlib1g-dev \
+    && pecl install memcached \
+    && docker-php-ext-enable memcached \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install Composer
+RUN php -r "readfile('https://getcomposer.org/installer');" | php -- --install-dir=/usr/bin/ --filename=composer
+
+# Set working directory
+WORKDIR /var/www/html
+
+# Copy project files
+COPY . .
+
+# Install PHP dependencies
+RUN composer install --no-interaction --prefer-dist --optimize-autoloader
+
+# Copy Nginx config for Railway
+COPY nginx.railway.conf /etc/nginx/sites-available/default
+
+# Copy Supervisor config (manages both nginx + php-fpm)
+COPY supervisord.conf /etc/supervisor/conf.d/supervisord.conf
+
+# Fix permissions
+RUN chown -R www-data:www-data /var/www/html \
+    && chmod -R 755 /var/www/html
+
+# Railway injects $PORT environment variable
+EXPOSE 80
+
+CMD ["/usr/bin/supervisord", "-c", "/etc/supervisor/conf.d/supervisord.conf"]
