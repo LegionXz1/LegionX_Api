@@ -1,9 +1,11 @@
 FROM php:8.4-fpm
 
-# Install Nginx, Supervisor, and PHP extensions
+# Install Nginx, Supervisor, Memcached, gettext-base (for envsubst), and PHP extensions
 RUN apt-get update && apt-get install -y \
     nginx \
     supervisor \
+    memcached \
+    gettext-base \
     zip \
     unzip \
     git \
@@ -26,17 +28,20 @@ COPY . .
 # Install PHP dependencies
 RUN composer install --no-interaction --prefer-dist --optimize-autoloader
 
-# Copy Nginx config for Railway
-COPY nginx.railway.conf /etc/nginx/sites-available/default
+# Copy Nginx config as a template (PORT will be substituted at runtime)
+COPY nginx.railway.conf /etc/nginx/sites-available/default.template
 
-# Copy Supervisor config (manages both nginx + php-fpm)
+# Copy Supervisor config (manages nginx, php-fpm, memcached)
 COPY supervisord.conf /etc/supervisor/conf.d/supervisord.conf
+
+# Make start script executable
+RUN chmod +x /var/www/html/start.sh
 
 # Fix permissions
 RUN chown -R www-data:www-data /var/www/html \
     && chmod -R 755 /var/www/html
 
-# Railway injects $PORT environment variable
+# Railway dynamically assigns $PORT
 EXPOSE 80
 
-CMD ["/usr/bin/supervisord", "-c", "/etc/supervisor/conf.d/supervisord.conf"]
+CMD ["/var/www/html/start.sh"]

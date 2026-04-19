@@ -2,6 +2,6 @@
 dockerfilePath = "Dockerfile.railway"
 
 [deploy]
-healthcheckPath = "/"
-healthcheckTimeout = 60
+healthcheckPath = "/docs/"
+healthcheckTimeout = 100
 restartPolicyType = "on_failure"
